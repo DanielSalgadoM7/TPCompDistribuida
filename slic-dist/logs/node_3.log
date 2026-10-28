@@ -1,0 +1,29 @@
+1,3,nó 3 escutando na porta 50053
+2,3,inicia eleição
+3,3,venceu a eleição: sou o LÍDER
+75,3,SubmitImage recebido do cliente
+88,3,job 25a44dc7: 777x673, K=418, S=36, workers=[1, 2, 3]
+95,3,LoadStrip: linhas 448-673
+99,3,job 25a44dc7: faixas enviadas
+106,3,RunIteration 0 concluída
+109,3,job 25a44dc7: iteração 0 resíduo=4.426
+115,3,RunIteration 1 concluída
+119,3,job 25a44dc7: iteração 1 resíduo=2.465
+126,3,RunIteration 2 concluída
+129,3,job 25a44dc7: iteração 2 resíduo=1.853
+136,3,RunIteration 3 concluída
+139,3,job 25a44dc7: iteração 3 resíduo=1.468
+144,3,RunIteration 4 concluída
+149,3,job 25a44dc7: iteração 4 resíduo=1.256
+157,3,RunIteration 5 concluída
+160,3,job 25a44dc7: iteração 5 resíduo=1.097
+167,3,RunIteration 6 concluída
+170,3,job 25a44dc7: iteração 6 resíduo=0.988
+175,3,RunIteration 7 concluída
+182,3,job 25a44dc7: iteração 7 resíduo=0.943
+189,3,RunIteration 8 concluída
+192,3,job 25a44dc7: iteração 8 resíduo=0.881
+199,3,RunIteration 9 concluída
+202,3,job 25a44dc7: iteração 9 resíduo=0.819
+207,3,GetLabels: enviando rótulos
+218,3,job 25a44dc7: concluído, 756 superpixels em 4.05s

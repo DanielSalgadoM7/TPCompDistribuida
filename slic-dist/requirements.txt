@@ -1,0 +1,6 @@
+grpcio
+grpcio-tools
+numpy
+scipy
+scikit-image
+pyyaml

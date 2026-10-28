@@ -1,0 +1,6 @@
+# Todos os nós leem este mesmo arquivo.
+# Para rodar em máquinas diferentes, troque 127.0.0.1 pelo IP de cada máquina.
+nodes:
+  - {id: 1, host: 127.0.0.1, port: 50051}
+  - {id: 2, host: 127.0.0.1, port: 50052}
+  - {id: 3, host: 127.0.0.1, port: 50053}

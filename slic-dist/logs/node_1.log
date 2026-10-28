@@ -1,0 +1,24 @@
+1,1,nó 1 escutando na porta 50051
+2,1,inicia eleição
+9,1,nó 2 (maior) respondeu à eleição
+12,1,novo líder reconhecido: nó 2
+24,1,novo líder reconhecido: nó 3
+91,1,LoadStrip: linhas 0-224
+102,1,RunIteration 0 concluída
+112,1,RunIteration 1 concluída
+122,1,RunIteration 2 concluída
+132,1,RunIteration 3 concluída
+142,1,RunIteration 4 concluída
+152,1,RunIteration 5 concluída
+163,1,RunIteration 6 concluída
+173,1,RunIteration 7 concluída
+185,1,RunIteration 8 concluída
+195,1,RunIteration 9 concluída
+205,1,GetLabels: enviando rótulos
+1497,1,líder 3 não responde ao heartbeat -> eleição
+1498,1,inicia eleição
+1505,1,nó 2 (maior) respondeu à eleição
+1508,1,novo líder reconhecido: nó 2
+1517,1,líder 2 não responde ao heartbeat -> eleição
+1518,1,inicia eleição
+1521,1,venceu a eleição: sou o LÍDER

@@ -1,0 +1,84 @@
+syntax = "proto3";
+package slic;
+
+service Node {
+  // cliente -> líder
+  rpc SubmitImage(ImageRequest) returns (ImageResult);
+  // líder -> workers
+  rpc LoadStrip(Strip) returns (Ack);
+  rpc RunIteration(Centers) returns (PartialSums);
+  rpc GetLabels(JobRef) returns (LabelStrip);
+  // eleição (Bully) e liveness
+  rpc Election(ElectionMsg) returns (ElectionAnswer);
+  rpc Coordinator(CoordinatorMsg) returns (Ack);
+  rpc Heartbeat(Ping) returns (Ack);
+}
+
+// ---------- cliente <-> líder ----------
+message ImageRequest {
+  int64 lamport = 1;
+  int32 width = 2;
+  int32 height = 3;
+  bytes rgb = 4;            // uint8, linha a linha, H*W*3 bytes
+  int32 k = 5;              // número desejado de superpixels
+  float compactness = 6;    // parâmetro m do SLIC
+  int32 max_iter = 7;
+}
+
+message ImageResult {
+  int64 lamport = 1;
+  bool ok = 2;
+  string message = 3;
+  int32 leader_id = 4;      // usado para redirecionar o cliente se o nó não for líder
+  int32 width = 5;
+  int32 height = 6;
+  bytes labels = 7;         // int32, linha a linha
+  int32 num_superpixels = 8;
+  double elapsed = 9;       // segundos
+}
+
+// ---------- líder <-> workers ----------
+message Strip {
+  int64 lamport = 1;
+  string job_id = 2;
+  int32 row_start = 3;      // primeira linha (global) da faixa
+  int32 row_end = 4;        // última linha + 1
+  int32 width = 5;
+  bytes lab_data = 6;       // float32 (L,a,b), linha a linha
+}
+
+message Centers {
+  int64 lamport = 1;
+  string job_id = 2;
+  int32 iteration = 3;
+  repeated float values = 4;   // K*5: l, a, b, x, y
+  float step = 5;              // S
+  float compactness = 6;       // m
+}
+
+message PartialSums {
+  int64 lamport = 1;
+  int32 iteration = 2;
+  repeated double sums = 3;    // K*5
+  repeated int32 counts = 4;   // K
+}
+
+message JobRef {
+  int64 lamport = 1;
+  string job_id = 2;
+}
+
+message LabelStrip {
+  int64 lamport = 1;
+  int32 row_start = 2;
+  int32 row_end = 3;
+  int32 width = 4;
+  bytes labels = 5;            // int32, linha a linha
+}
+
+// ---------- eleição / liveness ----------
+message Ack { bool ok = 1; int64 lamport = 2; }
+message Ping { int32 from_id = 1; int64 lamport = 2; }
+message ElectionMsg { int32 from_id = 1; int64 lamport = 2; }
+message ElectionAnswer { bool alive = 1; int64 lamport = 2; }
+message CoordinatorMsg { int32 leader_id = 1; int64 lamport = 2; }

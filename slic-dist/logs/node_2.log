@@ -1,0 +1,20 @@
+1,2,nó 2 escutando na porta 50052
+5,2,Election recebido do nó 1
+6,2,inicia eleição
+9,2,venceu a eleição: sou o LÍDER
+29,2,novo líder reconhecido: nó 3
+92,2,LoadStrip: linhas 224-448
+103,2,RunIteration 0 concluída
+113,2,RunIteration 1 concluída
+123,2,RunIteration 2 concluída
+133,2,RunIteration 3 concluída
+143,2,RunIteration 4 concluída
+153,2,RunIteration 5 concluída
+164,2,RunIteration 6 concluída
+174,2,RunIteration 7 concluída
+186,2,RunIteration 8 concluída
+196,2,RunIteration 9 concluída
+206,2,GetLabels: enviando rótulos
+1501,2,Election recebido do nó 1
+1502,2,inicia eleição
+1505,2,venceu a eleição: sou o LÍDER
