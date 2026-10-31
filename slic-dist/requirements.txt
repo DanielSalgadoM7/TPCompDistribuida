@@ -1,6 +1,7 @@
-grpcio
-grpcio-tools
-numpy
-scipy
-scikit-image
-pyyaml
+grpcio==1.85.0
+grpcio-tools==1.85.0
+protobuf==7.35.1
+numpy==2.2.6
+scipy==1.15.3
+scikit-image==0.25.2
+PyYAML==6.0.2

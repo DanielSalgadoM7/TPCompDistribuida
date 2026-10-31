@@ -11,6 +11,7 @@ class Election:
         self.id = node_id
         self.stubs = {i: s for i, s in stubs.items() if i !=
                       node_id}  # só os outros nós
+        self.node_ids = set(self.stubs) | {node_id}
         self.clock = clock
         self.log = log
         self.hb_interval = hb_interval
@@ -23,6 +24,11 @@ class Election:
     def start(self):
         threading.Thread(target=self._loop, daemon=True).start()
 
+    @property
+    def current_leader(self):
+        with self._lock:
+            return self.leader_id
+
     # ---------- thread de heartbeat ----------
     def _loop(self):
         time.sleep(self.startup_delay)  # dá tempo para os outros nós subirem
@@ -30,22 +36,29 @@ class Election:
         fails = 0
         while True:
             time.sleep(self.hb_interval)
-            if self.leader_id is None:
+            leader_id = self.current_leader
+            if leader_id is None:
                 self.start_election()
                 continue
-            if self.leader_id == self.id:
+            if leader_id == self.id:
                 continue
             try:
                 msg = slic_pb2.Ping(from_id=self.id, lamport=self.clock.send())
-                ack = self.stubs[self.leader_id].Heartbeat(msg, timeout=1.0)
+                ack = self.stubs[leader_id].Heartbeat(msg, timeout=1.0)
                 self.clock.receive(ack.lamport)
                 fails = 0
             except grpc.RpcError:
-                fails += 1
-                if fails >= 2:
+                with self._lock:
+                    if self.leader_id != leader_id:
+                        fails = 0
+                        continue
+                    fails += 1
+                    should_elect = fails >= 2
+                    if should_elect:
+                        self.leader_id = None
+                if should_elect:
                     self.log(
-                        f"líder {self.leader_id} não responde ao heartbeat -> eleição")
-                    self.leader_id = None
+                        f"líder {leader_id} não responde ao heartbeat -> eleição")
                     fails = 0
                     self.start_election()
 
@@ -83,7 +96,8 @@ class Election:
                 self._electing = False
 
     def _become_leader(self):
-        self.leader_id = self.id
+        with self._lock:
+            self.leader_id = self.id
         self.log("venceu a eleição: sou o LÍDER")
         for nid, stub in self.stubs.items():
             try:
@@ -100,6 +114,16 @@ class Election:
             threading.Thread(target=self.start_election, daemon=True).start()
 
     def on_coordinator(self, leader_id):
-        self.leader_id = leader_id
+        if leader_id not in self.node_ids:
+            self.log(f"anúncio ignorado: ID de líder desconhecido ({leader_id})")
+            return
+        # Em Bully, um nó vivo de ID maior não deve aceitar um coordenador menor.
+        # Ele inicia/continua sua eleição; épocas formais exigiriam mudar o protobuf.
+        if leader_id < self.id:
+            self.log(f"anúncio de líder inferior ({leader_id}) ignorado; iniciando eleição")
+            threading.Thread(target=self.start_election, daemon=True).start()
+            return
+        with self._lock:
+            self.leader_id = leader_id
         self._coord_event.set()
         self.log(f"novo líder reconhecido: nó {leader_id}")

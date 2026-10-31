@@ -1,3 +1,4 @@
+import csv
 import os
 import threading
 
@@ -37,11 +38,12 @@ def make_logger(node_id, clock):
     open(path, "w").close()  # zera o log a cada execução
     lock = threading.Lock()
 
-    def log(evento):
-        t = clock.tick()
+    def log(evento, event_type="event", job_id="", message_id="", iteration=""):
         with lock:
+            t = clock.tick()
             print(f"[L={t:>4}] [nó {node_id}] {evento}", flush=True)
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(f"{t},{node_id},{evento}\n")
+            with open(path, "a", encoding="utf-8", newline="") as f:
+                csv.writer(f).writerow((t, node_id, event_type, job_id,
+                                        message_id, iteration, evento))
 
     return log
