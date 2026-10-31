@@ -20,8 +20,7 @@ def _alive_nodes(stubs, clock):
     alive = []
     for nid, stub in sorted(stubs.items()):
         try:
-            ack = stub.Heartbeat(slic_pb2.Ping(
-                from_id=0, lamport=clock.send()), timeout=1.0)
+            ack = stub.Heartbeat(slic_pb2.Ping(from_id=0, lamport=clock.send()), timeout=1.0)
             clock.receive(ack.lamport)
             alive.append(nid)
         except grpc.RpcError:
@@ -63,11 +62,19 @@ def process(req, stubs, clock, log):
 
         def run(part, it=it, vals=vals):
             nid = part[0]
-            msg = slic_pb2.Centers(lamport=clock.send(), job_id=job_id, iteration=it,
-                                   values=vals, step=s, compactness=m)
-            r = stubs[nid].RunIteration(msg)
-            clock.receive(r.lamport)
-            return np.array(r.sums).reshape(k, 5), np.array(r.counts, dtype=np.int64)
+            for attempt in range(3):
+                sent = clock.send()
+                msg = slic_pb2.Centers(lamport=sent, job_id=job_id, iteration=it,
+                                       values=vals, step=s, compactness=m)
+                r = stubs[nid].RunIteration(msg)
+                clock.receive(r.lamport)
+                # Uma resposta legítima é causalmente posterior ao pedido (r.lamport > sent)
+                # e pertence a esta iteração. Caso contrário é obsoleta: descarta e reenvia.
+                if r.lamport > sent and r.iteration == it:
+                    return np.array(r.sums).reshape(k, 5), np.array(r.counts, dtype=np.int64)
+                log(f"job {job_id}: resposta obsoleta do nó {nid} descartada "
+                    f"(L_resp={r.lamport}, L_envio={sent}, it={r.iteration}, esperado {it})")
+            raise RuntimeError(f"nó {nid} não respondeu corretamente à iteração {it}")
 
         results = _par(run, parts)
         sums = sum(r[0] for r in results)
@@ -80,8 +87,7 @@ def process(req, stubs, clock, log):
     # 3) coleta os rótulos e monta o mapa completo
     def get(part):
         nid = part[0]
-        r = stubs[nid].GetLabels(slic_pb2.JobRef(
-            lamport=clock.send(), job_id=job_id))
+        r = stubs[nid].GetLabels(slic_pb2.JobRef(lamport=clock.send(), job_id=job_id))
         clock.receive(r.lamport)
         return np.frombuffer(r.labels, dtype=np.int32).reshape(-1, w)
 
