@@ -15,3 +15,10 @@ Para várias máquinas, troque os hosts em config.yaml pelos IPs reais.
 
 ## Logs de Lamport (linha do tempo global)
     cat logs/*.log | sort -t, -k1 -n
+
+## Teste do descarte de mensagens obsoletas (Lamport)
+Com o nó 1 rodando em outro terminal:
+
+    python test_stale.py
+
+Mensagens com timestamp de Lamport antigo ou iteração anterior são rejeitadas pelo worker.
