@@ -1,9 +1,9 @@
 """Cliente.  Uso:  python client.py foto.jpg --k 800 --out resultado.png"""
 import argparse
 import sys
- 
+
 sys.path.insert(0, "node")  # para achar slic_pb2 / slic_pb2_grpc
- 
+
 import grpc
 import numpy as np
 import slic_pb2
@@ -11,7 +11,6 @@ import slic_pb2_grpc
 import yaml
 from skimage import img_as_ubyte, io, segmentation
 from skimage.color import gray2rgb
-
 
 MAX_MSG = 512 * 1024 * 1024
 OPTIONS = [("grpc.max_send_message_length", MAX_MSG),
@@ -48,8 +47,7 @@ def main():
             continue
         tried.add(nid)
         try:
-            stub = slic_pb2_grpc.NodeStub(
-                grpc.insecure_channel(addrs[nid], options=OPTIONS))
+            stub = slic_pb2_grpc.NodeStub(grpc.insecure_channel(addrs[nid], options=OPTIONS))
             res = stub.SubmitImage(req, timeout=900)
         except grpc.RpcError as e:
             print(f"nó {nid} indisponível ({e.code()})")
@@ -65,7 +63,7 @@ def main():
         sys.exit("nenhum líder conseguiu processar a imagem")
 
     labels = np.frombuffer(result.labels, dtype=np.int32).reshape(h, w)
-    print(f"{result.num_superpixels} superpixels em {result.elapsed:.2f}s (líder processou)")
+    print(f"{result.num_superpixels} superpixels em {result.elapsed:.2f}s (coordenado pelo líder)")
     io.imsave(a.out, img_as_ubyte(segmentation.mark_boundaries(img, labels)))
     print(f"salvo em {a.out}")
 
