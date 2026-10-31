@@ -37,29 +37,38 @@ class NodeService(slic_pb2_grpc.NodeServicer):
         self.log("SubmitImage recebido do cliente")
         try:
             return coordinator.process(request, self.stubs, self.clock, self.log)
-        except grpc.RpcError as e:
-            self.log(f"falha em worker durante o job: {e.code()}")
+        except (grpc.RpcError, RuntimeError) as e:
+            motivo = e.code() if isinstance(e, grpc.RpcError) else e
+            self.log(f"falha durante o job: {motivo}")
             return slic_pb2.ImageResult(lamport=self.clock.send(), ok=False,
-                                        message=f"falha em worker: {e.code()}")
+                                        message=f"falha em worker: {motivo}")
 
     # ---------- líder -> worker ----------
     def LoadStrip(self, request, context):
         self.clock.receive(request.lamport)
-        lab = np.frombuffer(
-            request.lab_data, dtype=np.float32).reshape(-1, request.width, 3)
-        self.jobs[request.job_id] = {"lab": lab,
-                                     "g0": request.row_start, "labels": None}
+        lab = np.frombuffer(request.lab_data, dtype=np.float32).reshape(-1, request.width, 3)
+        # last_ts / last_it: último timestamp de Lamport e iteração aceitos (descarta mensagens obsoletas)
+        self.jobs[request.job_id] = {"lab": lab, "g0": request.row_start, "labels": None,
+                                     "last_ts": request.lamport, "last_it": -1}
         self.log(f"LoadStrip: linhas {request.row_start}-{request.row_end}")
         return slic_pb2.Ack(ok=True, lamport=self.clock.send())
 
     def RunIteration(self, request, context):
         self.clock.receive(request.lamport)
-        job = self.jobs[request.job_id]
+        job = self.jobs.get(request.job_id)
+        if job is None:
+            context.abort(grpc.StatusCode.NOT_FOUND, "job desconhecido")
+        # Uso do relógio de Lamport: uma mensagem que não é causalmente posterior à última
+        # aceita (timestamp menor ou igual, ou iteração anterior) é duplicada/atrasada -> descarta.
+        if request.lamport <= job["last_ts"] or request.iteration < job["last_it"]:
+            self.log(f"DESCARTADA mensagem obsoleta: L_msg={request.lamport} "
+                     f"(última aceita={job['last_ts']}), iteração {request.iteration}")
+            context.abort(grpc.StatusCode.ABORTED, "mensagem obsoleta")
+        job["last_ts"] = request.lamport
+        job["last_it"] = request.iteration
         centers = np.array(request.values, dtype=np.float32).reshape(-1, 5)
-        labels = slic_core.assign(
-            job["lab"], job["g0"], centers, request.step, request.compactness)
-        sums, counts = slic_core.accumulate(
-            job["lab"], job["g0"], labels, len(centers))
+        labels = slic_core.assign(job["lab"], job["g0"], centers, request.step, request.compactness)
+        sums, counts = slic_core.accumulate(job["lab"], job["g0"], labels, len(centers))
         job["labels"] = labels
         self.log(f"RunIteration {request.iteration} concluída")
         return slic_pb2.PartialSums(lamport=self.clock.send(), iteration=request.iteration,
